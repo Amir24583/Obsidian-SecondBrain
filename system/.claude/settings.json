@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python .brain/sb.py:*)",
+      "Bash(python3 .brain/sb.py:*)",
+      "Bash(py .brain/sb.py:*)",
+      "Bash(py -3 .brain/sb.py:*)"
+    ],
+    "deny": [
+      "Edit(./raw/inbox/**)",
+      "Edit(./raw/assets/**)",
+      "Edit(./OneNote Journals/**)",
+      "Edit(./.brain/state.json)",
+      "Edit(./CLAUDE.md)"
+    ]
+  }
+}
