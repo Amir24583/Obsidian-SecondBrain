@@ -106,6 +106,17 @@ class SecondBrain(unittest.TestCase):
         self.assertIn("2 sources = 2 filed", out)
         self.assertFalse((self.vault / "wiki/sources/raw-inbox-pairs-trading.md").exists())
 
+    def test_sections_go_together(self):
+        (self.on / "College" / "Chem").mkdir()
+        for i in range(3):
+            self.onenote_page(f"College/Biology/b{i}.md", f"# b{i}\n", f"{{B{i}}}")
+        self.onenote_page("College/Chem/c0.md", "# c0\n", "{C0}")
+        out = self.sb("auto", "--dry-run")
+        self.assertIn("filing 3", out)
+        self.assertNotIn("Chem", out)
+        self.sb("auto")
+        self.assertIn("0 pending", self.sb("pending"))
+
     def test_path_keys_upgrade_to_onenote_ids(self):
         self.onenote_page("College/Biology/Cells.md", "# Cells\n\nATP.\n")      # no ID yet
         self.sb("auto")

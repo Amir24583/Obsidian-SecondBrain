@@ -389,6 +389,19 @@ INGEST_PROMPT = (
 ALLOWED = "Read,Write,Edit,Glob,Grep"
 
 
+def pick_batch(pending: list[dict], size: int, section_cap: int) -> list[dict]:
+    """Next batch to file. OneNote pages go a whole section at a time (up to
+    section_cap pages), so related notes are read together and the run count
+    drops to about one per section. Everything else goes `size` at a time."""
+    first = pending[0]
+    if section_cap and first.get("kind") == "onenote" and first["change"] in ("new", "changed"):
+        folder = first["path"].rsplit("/", 1)[0]
+        same = [p for p in pending if p.get("kind") == "onenote" and p["change"] in ("new", "changed")
+                and p["path"].rsplit("/", 1)[0] == folder]
+        return same[:section_cap]
+    return pending[:size]
+
+
 def cmd_auto(args) -> int:
     claude = claude_cmd()
     rounds = 0
@@ -401,7 +414,7 @@ def cmd_auto(args) -> int:
                 print("\nChecking the wiki after this run:")
                 cmd_lint(argparse.Namespace(strict=False))
             return 0
-        batch = pending[: args.batch]
+        batch = pick_batch(pending, args.batch, args.section_cap)
         write_json(PENDING_FILE, {"generated_at": now(), "total": len(pending), "batch": batch})
         print(f"Round {rounds + 1}: {len(pending)} pending, filing {len(batch)}.")
         if args.dry_run:
@@ -504,7 +517,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("apply"); p.add_argument("report", nargs="?")
     sub.add_parser("status")
     p = sub.add_parser("lint"); p.add_argument("--strict", action="store_true", help="unfiled sources are errors")
-    p = sub.add_parser("auto"); p.add_argument("--batch", type=int, default=10); p.add_argument("--rounds", type=int, default=20)
+    p = sub.add_parser("auto"); p.add_argument("--batch", type=int, default=10); p.add_argument("--rounds", type=int, default=100)
+    p.add_argument("--section-cap", type=int, default=40, help="OneNote pages per run when filing a whole section (0 = off)")
     p.add_argument("--dry-run", action="store_true"); p.add_argument("--model")
     p = sub.add_parser("eval"); p.add_argument("--model")
     sub.add_parser("agreement")
